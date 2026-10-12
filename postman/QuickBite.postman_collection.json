@@ -1,0 +1,79 @@
+{
+  "info": {
+    "name": "QuickBite API",
+    "description": "Customer, menu, checkout, and admin API examples. Run Login/Register, then List foods before Create order. Tokens and IDs are stored in collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" },
+    { "key": "foodId", "value": "" },
+    { "key": "orderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register customer",
+          "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 201) { pm.collectionVariables.set('token', pm.response.json().token); }"], "type": "text/javascript" } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Aanya Sharma\",\n  \"email\": \"aanya@example.com\",\n  \"password\": \"tasteful-demo-123\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/auth/register" }
+        },
+        {
+          "name": "Login (customer or admin)",
+          "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 200) { pm.collectionVariables.set('token', pm.response.json().token); }"], "type": "text/javascript" } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"aanya@example.com\",\n  \"password\": \"tasteful-demo-123\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/auth/login" }
+        },
+        {
+          "name": "Current user",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Foods",
+      "item": [
+        {
+          "name": "List foods and save first food ID",
+          "event": [{ "listen": "test", "script": { "exec": ["const foods = pm.response.json().foods;", "if (foods && foods.length) { pm.collectionVariables.set('foodId', foods[0]._id); }"], "type": "text/javascript" } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/foods?sort=price-asc" }
+        },
+        { "name": "Search foods", "request": { "method": "GET", "url": "{{baseUrl}}/foods?search=biryani&category=Biryani" } },
+        { "name": "Get one food", "request": { "method": "GET", "url": "{{baseUrl}}/foods/{{foodId}}" } },
+        {
+          "name": "Add food (admin)",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Demo Paneer Wrap\",\n  \"description\": \"Fresh paneer and crunchy vegetables in a toasted wrap.\",\n  \"price\": 179,\n  \"category\": \"Wraps\",\n  \"image\": \"https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=900&q=85\",\n  \"isAvailable\": true\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/foods" }
+        },
+        {
+          "name": "Edit food (admin)",
+          "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Demo Paneer Wrap\",\n  \"description\": \"Fresh paneer and crunchy vegetables in a toasted wrap.\",\n  \"price\": 189,\n  \"category\": \"Wraps\",\n  \"image\": \"https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=900&q=85\",\n  \"isAvailable\": true\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/foods/{{foodId}}" }
+        },
+        { "name": "Delete food (admin)", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/foods/{{foodId}}" } }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create order (customer)",
+          "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 201) { pm.collectionVariables.set('orderId', pm.response.json().order._id); }"], "type": "text/javascript" } }],
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"customerName\": \"Aanya Sharma\",\n  \"phoneNumber\": \"+91 98765 43210\",\n  \"deliveryAddress\": \"12 Lake Road, Bengaluru 560001\",\n  \"instructions\": \"Call on arrival\",\n  \"items\": [{ \"foodId\": \"{{foodId}}\", \"quantity\": 2 }]\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/orders" }
+        },
+        { "name": "My orders (customer)", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/orders/my-orders" } },
+        { "name": "Get my order (customer)", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/orders/{{orderId}}" } }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        { "name": "Dashboard", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/admin/dashboard" } },
+        { "name": "All orders", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/admin/orders" } },
+        { "name": "Update order status", "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"Preparing\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/admin/orders/{{orderId}}/status" } }
+      ]
+    }
+  ]
+}
